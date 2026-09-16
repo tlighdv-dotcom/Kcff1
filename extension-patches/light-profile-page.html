@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Light Device Profiles</title>
+  <link rel="stylesheet" href="light-profile.css">
+</head>
+<body>
+  <main class="wrap">
+    <h1>Light Device Profiles</h1>
+    <p class="sub">Chọn hồ sơ trình duyệt cho mục đích riêng tư, tương thích và kiểm thử website.</p>
+
+    <label>Hồ sơ
+      <select id="preset">
+        <option value="default">Mặc định Android</option>
+        <option value="android">Android chung</option>
+        <option value="windows">Desktop Windows</option>
+        <option value="custom">Tùy chỉnh</option>
+      </select>
+    </label>
+
+    <section id="customFields" hidden>
+      <label>User-Agent
+        <textarea id="ua" rows="5" maxlength="512"></textarea>
+      </label>
+      <label>Ngôn ngữ / locale
+        <input id="language" placeholder="vi-VN">
+      </label>
+      <div class="grid">
+        <label>Viewport width
+          <input id="width" inputmode="numeric" type="number" min="320" max="7680">
+        </label>
+        <label>Viewport height
+          <input id="height" inputmode="numeric" type="number" min="320" max="7680">
+        </label>
+      </div>
+    </section>
+
+    <button id="save">Lưu hồ sơ</button>
+    <p id="status" role="status"></p>
+    <p class="note">User-Agent và ngôn ngữ được áp dụng cho request mới. Có thể cần tải lại tab. Viewport là thông tin cấu hình kiểm thử; bản đầu không giả lập fingerprint sâu như WebGL, canvas, IMEI hay Android ID.</p>
+  </main>
+  <script src="light-device-profiles.js"></script>
+  <script src="light-profile-page.js"></script>
+</body>
+</html>
