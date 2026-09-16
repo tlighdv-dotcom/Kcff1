@@ -1,0 +1,86 @@
+name: Build Trinh Duyet Light
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/trinh-duyet-light
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - name: Checkout Light wrapper
+        uses: actions/checkout@v5
+
+      - name: Free runner disk space
+        run: |
+          set -euxo pipefail
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup || true
+          sudo apt-get clean
+          df -h
+
+      - name: Install wrapper build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git rsync zip unzip openjdk-17-jdk
+          chmod +x scripts/*.sh
+
+      - name: Validate scripts and profile model
+        run: |
+          bash scripts/test-scripts.sh
+          node tests/device-profile.test.mjs
+
+      - name: Prepare Titanium upstream
+        run: bash scripts/prepare-upstream.sh
+
+      - name: Build Light Device Profiles CRX
+        run: |
+          bash scripts/patch-extension.sh work/android-titanium-extension
+          (cd work/android-titanium-extension && bash build.sh)
+          test -s work/android-titanium-extension/dist/titanium.crx
+
+      - name: Bundle Light CRX into browser
+        run: |
+          bash scripts/wire-extension.sh \
+            work/android-titanium-browser \
+            work/android-titanium-extension/dist/titanium.crx
+          grep -q 'file://' work/android-titanium-browser/.gclient
+
+      - name: Generate ephemeral signing key
+        run: |
+          bash scripts/generate-test-signing.sh "$RUNNER_TEMP/light-signing"
+          base64 -d "$RUNNER_TEMP/light-signing/local.properties.b64" | grep -q 'keyAlias=light'
+
+      - name: Build Chromium Android APK
+        run: |
+          cd work/android-titanium-browser
+          ./build.sh
+
+      - name: Collect arm64 APK
+        run: |
+          set -euo pipefail
+          mapfile -t APKS < <(find work/android-titanium-browser/chromium/src/out/release -type f -name '*-arm64-v8a.apk')
+          if [[ ${#APKS[@]} -ne 1 ]]; then
+            echo "Expected exactly one arm64 APK, found ${#APKS[@]}" >&2
+            printf '%s\n' "${APKS[@]:-}"
+            exit 1
+          fi
+          mkdir -p artifacts
+          cp "${APKS[0]}" artifacts/Trinh-Duyet-Light-arm64-v8a.apk
+          test -s artifacts/Trinh-Duyet-Light-arm64-v8a.apk
+          ls -lh artifacts/Trinh-Duyet-Light-arm64-v8a.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trinh-Duyet-Light-arm64-v8a
+          path: artifacts/Trinh-Duyet-Light-arm64-v8a.apk
+          if-no-files-found: error
+          compression-level: 0
