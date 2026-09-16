@@ -29,7 +29,7 @@ jobs:
       - name: Install wrapper build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git rsync zip unzip openjdk-17-jdk
+          sudo apt-get install -y git rsync zip unzip openjdk-17-jdk openssl
           chmod +x scripts/*.sh
 
       - name: Validate scripts and profile model
@@ -43,6 +43,8 @@ jobs:
       - name: Build Light Device Profiles CRX
         run: |
           bash scripts/patch-extension.sh work/android-titanium-extension
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/light-crx.pem"
+          export CRX_TEST_PEM="$(base64 -w0 "$RUNNER_TEMP/light-crx.pem")"
           (cd work/android-titanium-extension && bash build.sh)
           test -s work/android-titanium-extension/dist/titanium.crx
 
